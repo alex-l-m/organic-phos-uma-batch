@@ -50,6 +50,6 @@ singlet_energies = list(batcher.executor.map(partial(singlet_energy_step, batche
 
 triplet_energies = list(batcher.executor.map(partial(triplet_energy_step, batcher.batch_predict_unit), initial_geometries))
 
-for mol_id, singlet_energy, triplet_energy in zip(mol_ids, singlet_energies, triplet_energies):
-    st_gap = triplet_energy - singlet_energy
-    print(f'{mol_id}: S-T gap = {st_gap:.4f} eV')
+intbl['uma_st'] = [triplet - singlet for triplet, singlet in zip(triplet_energies, singlet_energies)]
+
+intbl.to_csv('smiles_energy_uma.csv', index=False)
