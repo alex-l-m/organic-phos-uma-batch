@@ -1,0 +1,13 @@
+[project]
+name = "organic-phos-uma-batch"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "ase>=3.27.0",
+    "fairchem-core>=2",
+    "pandas>=3.0.0",
+    "rdkit>=2025.9.5",
+    "torch",
+]
