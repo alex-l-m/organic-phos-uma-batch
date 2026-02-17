@@ -3,7 +3,6 @@ from rdkit import Chem
 from functools import partial
 from rdkit.Chem import rdDistGeom
 from ase import Atoms
-from ase.optimize import BFGS
 from fairchem.core import pretrained_mlip
 from fairchem.core.calculate import FAIRChemCalculator, InferenceBatcher
 
@@ -14,11 +13,11 @@ DEVICE = 'cpu'  # or 'cpu'
 # Load the pretrained model
 predictor = pretrained_mlip.get_predict_unit(MODEL, device=DEVICE) # Models: uma-s-1p1, uma-m-1p1
 
-batcher = InferenceBatcher(predictor, concurrency_backend_options={'max_workers': 32})
+batcher = InferenceBatcher(predictor, concurrency_backend_options={'max_workers': 8})
 
 def uma_setup(multiplicity: int, predictor, atoms: Atoms) -> None:
     atoms.info['charge'] = 0
-    atoms.info['spin'] = 1
+    atoms.info['spin'] = multiplicity
     atoms.calc = FAIRChemCalculator(predictor, task_name='omol')
 
 def initial_geometry(mol_id: str, smile: str) -> Atoms:
