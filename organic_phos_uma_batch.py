@@ -46,10 +46,10 @@ smiles_strings = intbl['smiles'].tolist()
 initial_geometries = [initial_geometry(mol_id, smile) \
         for mol_id, smile in zip(mol_ids, smiles_strings)]
 
-singlet_energies = list(batcher.executor.map(partial(singlet_energy_step, predictor), initial_geometries))
+singlet_energies = list(batcher.executor.map(partial(singlet_energy_step, batcher.batch_predict_unit), initial_geometries))
 
-triplet_energies = list(batcher.executor.map(partial(triplet_energy_step, predictor), initial_geometries))
+triplet_energies = list(batcher.executor.map(partial(triplet_energy_step, batcher.batch_predict_unit), initial_geometries))
 
 for mol_id, singlet_energy, triplet_energy in zip(mol_ids, singlet_energies, triplet_energies):
-    st_gap = singlet_energy - triplet_energy
+    st_gap = triplet_energy - singlet_energy
     print(f'{mol_id}: S-T gap = {st_gap:.4f} eV')
