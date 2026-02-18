@@ -22,7 +22,7 @@ def uma_setup(multiplicity: int, predictor, atoms: Atoms) -> None:
     atoms.info['spin'] = multiplicity
     atoms.calc = FAIRChemCalculator(predictor, task_name='omol')
 
-def uma_atomicdata_setup(multiplicity: int, predictor, atoms: Atoms):
+def uma_atomicdata_setup(multiplicity: int, atoms: Atoms):
     '''Setup function for UMA, for using AtomicData for batching'''
     atoms.info['charge'] = 0
     atoms.info['spin'] = multiplicity
@@ -65,11 +65,11 @@ optimized_geometries = list(batcher.executor.map(partial(triplet_geometry, batch
 # https://fair-chem.github.io/batch-inference/
 # Could use InferenceBatcher instead, but this works for energy or force
 # calculations
-singlet_atomic_data = [uma_atomicdata_setup(1, predictor, atoms) for atoms in optimized_geometries]
+singlet_atomic_data = [uma_atomicdata_setup(1, atoms) for atoms in optimized_geometries]
 singlet_batch = atomicdata_list_to_batch(singlet_atomic_data)
 singlet_energies = predictor.predict(singlet_batch)['energy'].tolist()
 
-triplet_atomic_data = [uma_atomicdata_setup(3, predictor, atoms) for atoms in optimized_geometries]
+triplet_atomic_data = [uma_atomicdata_setup(3, atoms) for atoms in optimized_geometries]
 triplet_batch = atomicdata_list_to_batch(triplet_atomic_data)
 triplet_energies = predictor.predict(triplet_batch)['energy'].tolist()
 
