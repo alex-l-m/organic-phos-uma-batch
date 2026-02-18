@@ -1,10 +1,9 @@
 import pandas as pd
 from rdkit import Chem
-from functools import partial
 from rdkit.Chem import rdDistGeom
 from ase import Atoms
 from fairchem.core import pretrained_mlip
-from fairchem.core.calculate import FAIRChemCalculator, InferenceBatcher
+from fairchem.core.datasets.atomic_data import AtomicData, atomicdata_list_to_batch
 
 
 MODEL = 'uma-s-1p1'  # Models: uma-s-1p1, uma-m-1p1
@@ -13,12 +12,10 @@ DEVICE = 'cpu'  # or 'cpu'
 # Load the pretrained model
 predictor = pretrained_mlip.get_predict_unit(MODEL, device=DEVICE) # Models: uma-s-1p1, uma-m-1p1
 
-batcher = InferenceBatcher(predictor, concurrency_backend_options={'max_workers': 8})
-
-def uma_setup(multiplicity: int, predictor, atoms: Atoms) -> None:
+def uma_batch_setup(multiplicity: int, predictor, atoms: Atoms):
     atoms.info['charge'] = 0
     atoms.info['spin'] = multiplicity
-    atoms.calc = FAIRChemCalculator(predictor, task_name='omol')
+    return AtomicData.from_ase(atoms, task_name='omol', r_data_keys=['charge', 'spin'])
 
 def initial_geometry(mol_id: str, smile: str) -> Atoms:
     mol_nohs = Chem.MolFromSmiles(smile)
@@ -30,14 +27,6 @@ def initial_geometry(mol_id: str, smile: str) -> Atoms:
     atoms.info['name'] = mol_id
     return atoms
 
-def singlet_energy_step(predictor, atoms: Atoms) -> float:
-    uma_setup(multiplicity=1, predictor=predictor, atoms=atoms)
-    return atoms.get_potential_energy()
-
-def triplet_energy_step(predictor, atoms: Atoms) -> float:
-    uma_setup(multiplicity=3, predictor=predictor, atoms=atoms)
-    return atoms.get_potential_energy()
-
 # READ INPUT
 intbl = pd.read_csv('smiles_energy.csv')
 mol_ids = intbl['mol_id'].tolist()
@@ -46,9 +35,13 @@ smiles_strings = intbl['smiles'].tolist()
 initial_geometries = [initial_geometry(mol_id, smile) \
         for mol_id, smile in zip(mol_ids, smiles_strings)]
 
-singlet_energies = list(batcher.executor.map(partial(singlet_energy_step, batcher.batch_predict_unit), initial_geometries))
+singlet_atomic_data = [uma_batch_setup(1, predictor, atoms) for atoms in initial_geometries]
+singlet_batch = atomicdata_list_to_batch(singlet_atomic_data)
+singlet_energies = predictor.predict(singlet_batch)['energy'].tolist()
 
-triplet_energies = list(batcher.executor.map(partial(triplet_energy_step, batcher.batch_predict_unit), initial_geometries))
+triplet_atomic_data = [uma_batch_setup(3, predictor, atoms) for atoms in initial_geometries]
+triplet_batch = atomicdata_list_to_batch(triplet_atomic_data)
+triplet_energies = predictor.predict(triplet_batch)['energy'].tolist()
 
 intbl['uma_st'] = [triplet - singlet for triplet, singlet in zip(triplet_energies, singlet_energies)]
 
