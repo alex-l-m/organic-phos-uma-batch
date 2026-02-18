@@ -23,7 +23,7 @@ def uma_setup(multiplicity: int, predictor, atoms: Atoms) -> None:
     atoms.calc = FAIRChemCalculator(predictor, task_name='omol')
 
 def uma_atomicdata_setup(multiplicity: int, predictor, atoms: Atoms):
-    '''Setup function for UMA, the for using AtomicData for batching'''
+    '''Setup function for UMA, for using AtomicData for batching'''
     atoms.info['charge'] = 0
     atoms.info['spin'] = multiplicity
     return AtomicData.from_ase(atoms, task_name='omol', r_data_keys=['charge', 'spin'])
